@@ -11,10 +11,11 @@ load_dotenv()
 
 # --- CONFIGURATION ---
 
-API_TOKEN = os.getenv("API_TOKEN")
-FORM_UID = os.getenv("FORM_UID")
-BASE_URL = os.getenv("BASE_URL")
-DATABASE_URL = os.getenv("DATABASE_URL")
+API_TOKEN = os.getenv("API_TOKEN", "").strip()
+FORM_UID = os.getenv("FORM_UID", "").strip()
+BASE_URL = os.getenv("BASE_URL", "").strip()
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+API_URL = os.getenv("API_URL", "").strip()
 
 if not API_TOKEN or not FORM_UID or not BASE_URL or not DATABASE_URL:
     raise ValueError("Certaines variables d'environnement sont manquantes.")
