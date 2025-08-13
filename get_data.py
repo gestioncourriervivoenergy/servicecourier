@@ -11,15 +11,15 @@ load_dotenv()
 
 # --- CONFIGURATION ---
 
-API_TOKEN = os.getenv("API_TOKEN")
-FORM_UID = os.getenv("FORM_UID")
-BASE_URL = "https://kf.kobotoolbox.org"
+API_TOKEN = os.getenv("API_TOKEN").strip()
+FORM_UID = os.getenv("FORM_UID").strip()
+BASE_URL = os.getenv("BASE_URL").strip()
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST").strip()
+DB_PORT = os.getenv("DB_PORT").strip()
+DB_NAME = os.getenv("DB_NAME").strip()
+DB_USER = os.getenv("DB_USER").strip()
+DB_PASSWORD = os.getenv("DB_PASSWORD").strip()
 
 # --- 1. Extraction des données Kobo ---
 
