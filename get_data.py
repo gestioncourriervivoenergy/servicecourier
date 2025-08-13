@@ -5,12 +5,12 @@ from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 import re
 import pandas as pd
+import socket
 
 # Charger les variables d'environnement
 load_dotenv()
 
 # --- CONFIGURATION ---
-
 API_TOKEN = os.getenv("API_TOKEN").strip()
 FORM_UID = os.getenv("FORM_UID").strip()
 BASE_URL = os.getenv("BASE_URL").strip()
@@ -22,7 +22,6 @@ DB_USER = os.getenv("DB_USER").strip()
 DB_PASSWORD = os.getenv("DB_PASSWORD").strip()
 
 # --- 1. Extraction des données Kobo ---
-
 def get_kobo_data():
     url = f"{BASE_URL}/api/v2/assets/{FORM_UID}/data/?format=json"
     headers = {"Authorization": f"Token {API_TOKEN}"}
@@ -31,10 +30,11 @@ def get_kobo_data():
     return response.json()["results"]
 
 # --- 2. Connexion base PostgreSQL ---
-
 def get_connection():
+    ipv4_host = socket.gethostbyname(DB_HOST)  # force IPv4
+    print(f"Connexion à PostgreSQL via IPv4: {ipv4_host}:{DB_PORT}")
     return psycopg2.connect(
-        host=DB_HOST,
+        host=ipv4_host,
         port=DB_PORT,
         dbname=DB_NAME,
         user=DB_USER,
@@ -42,7 +42,6 @@ def get_connection():
     )
 
 # --- 3. Nettoyage des emails ---
-
 def clean_email(email_str):
     if email_str is None:
         return None
@@ -57,13 +56,11 @@ def clean_email(email_str):
     if "_outlook_com" in email_str:
         email_str = email_str.replace("_outlook_com", "@outlook.com")
     
-    # Optionally, validate that the result contains a valid email pattern:
     if "@" in email_str:
         return email_str
     return None
 
 # --- 4. Nettoyage delais_traitement ---
-
 def parse_delais_traitement(val):
     if val is None:
         return None
@@ -76,7 +73,6 @@ def parse_delais_traitement(val):
     return None
 
 # --- 5. Chargement dans la base ---
-
 def load_data_to_db(data):
     conn = get_connection()
     cur = conn.cursor()
@@ -141,7 +137,6 @@ def load_data_to_db(data):
     print(f"{len(rows)} lignes insérées ou mises à jour.")
 
 # --- 6. Pipeline ETL ---
-
 if __name__ == "__main__":
     print("Extraction des données Kobo...")
     data = get_kobo_data()
