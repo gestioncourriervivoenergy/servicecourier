@@ -5,12 +5,13 @@ from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 import re
 import pandas as pd
+import socket
+from urllib.parse import urlparse, urlunparse
 
 # Charger les variables d'environnement (.env ou GitHub Secrets)
 load_dotenv()
 
 # --- CONFIGURATION ---
-
 API_TOKEN = os.getenv("API_TOKEN", "").strip()
 FORM_UID = os.getenv("FORM_UID", "").strip()
 BASE_URL = os.getenv("BASE_URL", "").strip()
@@ -28,10 +29,13 @@ def get_kobo_data():
     response.raise_for_status()
     return response.json()["results"]
 
-# --- 2. Connexion base PostgreSQL ---
+# --- 2. Connexion base PostgreSQL (force IPv4) ---
 def get_connection():
-    """Connexion directe via DATABASE_URL (support IPv4/IPv6)"""
-    return psycopg2.connect(DATABASE_URL)
+    parsed = urlparse(DATABASE_URL)
+    ipv4_host = socket.gethostbyname(parsed.hostname)  # Résolution IPv4
+    parsed_ipv4 = parsed._replace(netloc=f"{parsed.username}:{parsed.password}@{ipv4_host}:{parsed.port}")
+    ipv4_url = urlunparse(parsed_ipv4)
+    return psycopg2.connect(ipv4_url)
 
 # --- 3. Nettoyage des emails ---
 def clean_email(email_str):
