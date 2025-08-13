@@ -20,7 +20,7 @@ jobs:
         run: pip install -r requirements.txt
       
       - name: Run get_data.py
-        run: python backend/get_data.py
+        run: python get_data.py
         env:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           FORM_UID: ${{ secrets.FORM_UID }}
@@ -33,7 +33,7 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
 
       - name: Run send_all_emails.py
-        run: python backend/send_all_emails.py
+        run: python send_all_emails.py
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
