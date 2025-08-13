@@ -29,13 +29,34 @@ def get_kobo_data():
     response.raise_for_status()
     return response.json()["results"]
 
-# --- 2. Connexion base PostgreSQL (force IPv4) ---
+# --- 2. Connexion base PostgreSQL avec IPv4/IPv6 ---
 def get_connection():
     parsed = urlparse(DATABASE_URL)
-    ipv4_host = socket.gethostbyname(parsed.hostname)  # Résolution IPv4
-    parsed_ipv4 = parsed._replace(netloc=f"{parsed.username}:{parsed.password}@{ipv4_host}:{parsed.port}")
-    ipv4_url = urlunparse(parsed_ipv4)
-    return psycopg2.connect(ipv4_url)
+
+    # Résolution DNS pour IPv4 et IPv6
+    addr_info = socket.getaddrinfo(parsed.hostname, parsed.port, proto=socket.IPPROTO_TCP)
+
+    ipv4_addr = None
+    ipv6_addr = None
+
+    for family, _, _, _, sockaddr in addr_info:
+        if family == socket.AF_INET and not ipv4_addr:
+            ipv4_addr = sockaddr[0]
+        elif family == socket.AF_INET6 and not ipv6_addr:
+            ipv6_addr = sockaddr[0]
+
+    if ipv4_addr:
+        host_to_use = ipv4_addr
+    elif ipv6_addr:
+        host_to_use = f"[{ipv6_addr}]"  # Syntaxe IPv6 dans URL
+    else:
+        raise Exception("Impossible de résoudre l'adresse du serveur PostgreSQL")
+
+    # Reconstruire l'URL avec l'adresse IP trouvée
+    parsed_new = parsed._replace(netloc=f"{parsed.username}:{parsed.password}@{host_to_use}:{parsed.port}")
+    final_url = urlunparse(parsed_new)
+
+    return psycopg2.connect(final_url)
 
 # --- 3. Nettoyage des emails ---
 def clean_email(email_str):
