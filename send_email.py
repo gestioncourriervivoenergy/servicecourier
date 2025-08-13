@@ -8,14 +8,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com").strip()
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587)).strip()
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USER = os.getenv("EMAIL_USER").strip()  # ex: 94a621001@smtp-brevo.com
 EMAIL_PASS = os.getenv("EMAIL_PASS").strip()  # clé API Brevo
 EMAIL_FROM = os.getenv("EMAIL_FROM", "gestioncourriervivoenergy@gmail.com").strip() # email validé dans Brevo
 
 API_URL = os.getenv("API_URL").strip()
 DB_HOST = os.getenv("DB_HOST").strip()
-DB_PORT = os.getenv("DB_PORT").strip()
+DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME").strip()
 DB_USER = os.getenv("DB_USER").strip()
 DB_PASSWORD = os.getenv("DB_PASSWORD").strip()
