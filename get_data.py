@@ -5,17 +5,15 @@ from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
 import re
 import pandas as pd
-import socket
-from urllib.parse import urlparse, urlunparse
 
-# Charger les variables d'environnement (.env ou GitHub Secrets)
+# Charger les variables d'environnement
 load_dotenv()
 
 # --- CONFIGURATION ---
 API_TOKEN = os.getenv("API_TOKEN", "").strip()
 FORM_UID = os.getenv("FORM_UID", "").strip()
 BASE_URL = os.getenv("BASE_URL", "").strip()
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()  # Doit utiliser aws-0-eu-north-1.pooler.supabase.com
 API_URL = os.getenv("API_URL", "").strip()
 
 if not API_TOKEN or not FORM_UID or not BASE_URL or not DATABASE_URL:
@@ -29,34 +27,10 @@ def get_kobo_data():
     response.raise_for_status()
     return response.json()["results"]
 
-# --- 2. Connexion base PostgreSQL avec IPv4/IPv6 ---
+# --- 2. Connexion base PostgreSQL ---
 def get_connection():
-    parsed = urlparse(DATABASE_URL)
-
-    # Résolution DNS pour IPv4 et IPv6
-    addr_info = socket.getaddrinfo(parsed.hostname, parsed.port, proto=socket.IPPROTO_TCP)
-
-    ipv4_addr = None
-    ipv6_addr = None
-
-    for family, _, _, _, sockaddr in addr_info:
-        if family == socket.AF_INET and not ipv4_addr:
-            ipv4_addr = sockaddr[0]
-        elif family == socket.AF_INET6 and not ipv6_addr:
-            ipv6_addr = sockaddr[0]
-
-    if ipv4_addr:
-        host_to_use = ipv4_addr
-    elif ipv6_addr:
-        host_to_use = f"[{ipv6_addr}]"  # Syntaxe IPv6 dans URL
-    else:
-        raise Exception("Impossible de résoudre l'adresse du serveur PostgreSQL")
-
-    # Reconstruire l'URL avec l'adresse IP trouvée
-    parsed_new = parsed._replace(netloc=f"{parsed.username}:{parsed.password}@{host_to_use}:{parsed.port}")
-    final_url = urlunparse(parsed_new)
-
-    return psycopg2.connect(final_url)
+    """Connexion directe via DATABASE_URL"""
+    return psycopg2.connect(DATABASE_URL)
 
 # --- 3. Nettoyage des emails ---
 def clean_email(email_str):
