@@ -4,32 +4,22 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com").strip()
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USER = os.getenv("EMAIL_USER").strip()  # ex: 94a621001@smtp-brevo.com
-EMAIL_PASS = os.getenv("EMAIL_PASS").strip()  # clé API Brevo
-EMAIL_FROM = os.getenv("EMAIL_FROM", "gestioncourriervivoenergy@gmail.com").strip() # email validé dans Brevo
+EMAIL_USER = os.getenv("EMAIL_USER").strip()
+EMAIL_PASS = os.getenv("EMAIL_PASS").strip()
+EMAIL_FROM = os.getenv("EMAIL_FROM", "gestioncourriervivoenergy@gmail.com").strip()
 
 API_URL = os.getenv("API_URL").strip()
-DB_HOST = os.getenv("DB_HOST").strip()
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME").strip()
-DB_USER = os.getenv("DB_USER").strip()
-DB_PASSWORD = os.getenv("DB_PASSWORD").strip()
-
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_connection():
-    return psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
-
+    # Connexion directe avec DATABASE_URL
+    return psycopg2.connect(DATABASE_URL)
 
 def send_email(ref):
     conn = get_connection()
@@ -87,7 +77,7 @@ Merci !
     recipients = [email_dest]
     if email_cc:
         recipients.append(email_cc)
-    recipients.append(EMAIL_FROM)  # Copie expéditeur
+    recipients.append(EMAIL_FROM)
 
     with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
         server.starttls()
@@ -95,7 +85,6 @@ Merci !
         server.sendmail(EMAIL_FROM, recipients, msg.as_string())
 
     print(f"Email envoyé à {email_dest} pour la référence {ref}")
-
 
 if __name__ == "__main__":
     import sys
