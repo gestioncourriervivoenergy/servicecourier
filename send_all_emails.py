@@ -6,11 +6,11 @@ from send_email import send_email  # ta fonction d'envoi email, à adapter si be
 # Charger le fichier .env.local (même dossier que ce script)
 load_dotenv()
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST").strip()
+DB_PORT = os.getenv("DB_PORT").strip()
+DB_NAME = os.getenv("DB_NAME").strip()
+DB_USER = os.getenv("DB_USER").strip()
+DB_PASSWORD = os.getenv("DB_PASSWORD").strip()
 
 def get_connection():
     print(f"Connexion avec DB_HOST={DB_HOST}, DB_USER={DB_USER}, DB_NAME={DB_NAME}")
