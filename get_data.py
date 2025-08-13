@@ -6,30 +6,19 @@ from dotenv import load_dotenv
 import re
 import pandas as pd
 from urllib.parse import urlparse
+import socket
 
 # Charger les variables d'environnement
 load_dotenv()
 
 # --- CONFIGURATION ---
-
 API_TOKEN = os.getenv("API_TOKEN").strip()
 FORM_UID = os.getenv("FORM_UID").strip()
 BASE_URL = os.getenv("BASE_URL").strip()
 
-# Parsing de DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL").strip()
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL manquant dans les variables d'environnement")
-
-parsed = urlparse(DATABASE_URL)
-DB_HOST = parsed.hostname
-DB_PORT = parsed.port
-DB_NAME = parsed.path.lstrip('/')
-DB_USER = parsed.username
-DB_PASSWORD = parsed.password
 
 # --- 1. Extraction des données Kobo ---
-
 def get_kobo_data():
     url = f"{BASE_URL}/api/v2/assets/{FORM_UID}/data/?format=json"
     headers = {"Authorization": f"Token {API_TOKEN}"}
@@ -37,25 +26,29 @@ def get_kobo_data():
     response.raise_for_status()
     return response.json()["results"]
 
-# --- 2. Connexion base PostgreSQL ---
-
+# --- 2. Connexion base PostgreSQL avec IPv4 ---
 def get_connection():
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL is not set")
+
+    parsed = urlparse(DATABASE_URL)
+    ipv4_host = socket.gethostbyname(parsed.hostname)  # Force IPv4
+
     return psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
+        host=ipv4_host,
+        port=parsed.port,
+        dbname=parsed.path.lstrip("/"),
+        user=parsed.username,
+        password=parsed.password
     )
 
 # --- 3. Nettoyage des emails ---
-
 def clean_email(email_str):
     if email_str is None:
         return None
     if pd.isna(email_str) or str(email_str).strip() == "":
         return None
-    
+
     email_str = str(email_str).strip().lower().replace(" ", "")
     if "_gmail_com" in email_str:
         email_str = email_str.replace("_gmail_com", "@gmail.com")
@@ -63,13 +56,12 @@ def clean_email(email_str):
         email_str = email_str.replace("_yahoo_com", "@yahoo.com")
     if "_outlook_com" in email_str:
         email_str = email_str.replace("_outlook_com", "@outlook.com")
-    
+
     if "@" in email_str:
         return email_str
     return None
 
 # --- 4. Nettoyage delais_traitement ---
-
 def parse_delais_traitement(val):
     if val is None:
         return None
@@ -82,7 +74,6 @@ def parse_delais_traitement(val):
     return None
 
 # --- 5. Chargement dans la base ---
-
 def load_data_to_db(data):
     conn = get_connection()
     cur = conn.cursor()
@@ -147,7 +138,6 @@ def load_data_to_db(data):
     print(f"{len(rows)} lignes insérées ou mises à jour.")
 
 # --- 6. Pipeline ETL ---
-
 if __name__ == "__main__":
     print("Extraction des données Kobo...")
     data = get_kobo_data()
