@@ -25,13 +25,13 @@ jobs:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           FORM_UID: ${{ secrets.FORM_UID }}
           BASE_URL: ${{ secrets.BASE_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}   # ⬅ On passe juste DATABASE_URL
           API_URL: ${{ secrets.API_URL }}
 
       - name: Run send_all_emails.py
         run: python send_all_emails.py
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}   # ⬅ Même chose ici
           EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
           EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
