@@ -60,24 +60,35 @@ def parse_delais_traitement(val):
         if match:
             return int(match.group(1))
     return None
+
+# --- 5. Transformation destinataire ---
 def transform_destinataire(val):
     if not val or pd.isna(val):
         return None
     val = str(val).strip()
-
     # Exception: keep `_and_` as " and "
     val = val.replace("_and_", " and ")
-
     # Replace remaining underscores with " and "
     val = val.replace("_", " and ")
-
     return val
-    
 
-# --- 5. Chargement dans la base ---
+# --- 6. Récupérer les _id existants ---
+def get_existing_ids():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT _id FROM gestion_courier;")
+    existing = {row[0] for row in cur.fetchall()}
+    cur.close()
+    conn.close()
+    return existing
+
+# --- 7. Chargement dans la base ---
 def load_data_to_db(data):
     conn = get_connection()
     cur = conn.cursor()
+
+    existing_ids = get_existing_ids()
+    print(f"{len(existing_ids)} _id déjà présents dans la base.")
 
     insert_query = """
         INSERT INTO gestion_courier (
@@ -97,9 +108,11 @@ def load_data_to_db(data):
             statut = EXCLUDED.statut
     """
 
-    rows = []
+    rows_to_insert = []
     for r in data:
-        rows.append((
+        if r.get("_id") in existing_ids:
+            continue  # Skip if _id already exists
+        rows_to_insert.append((
             r.get("_id"),
             r.get("formhub/uuid"),
             r.get("start"),
@@ -132,13 +145,17 @@ def load_data_to_db(data):
             parse_delais_traitement(r.get("delais_traitement"))
         ))
 
-    execute_batch(cur, insert_query, rows)
-    conn.commit()
+    if rows_to_insert:
+        execute_batch(cur, insert_query, rows_to_insert)
+        conn.commit()
+        print(f"{len(rows_to_insert)} nouvelles lignes insérées ou mises à jour.")
+    else:
+        print("Aucune nouvelle ligne à insérer.")
+
     cur.close()
     conn.close()
-    print(f"{len(rows)} lignes insérées ou mises à jour.")
 
-# --- 6. Pipeline ETL ---
+# --- 8. Pipeline ETL ---
 if __name__ == "__main__":
     print("Extraction des données Kobo...")
     data = get_kobo_data()
