@@ -60,6 +60,19 @@ def parse_delais_traitement(val):
         if match:
             return int(match.group(1))
     return None
+def transform_destinataire(val):
+    if not val or pd.isna(val):
+        return None
+    val = str(val).strip()
+
+    # Exception: keep `_and_` as " and "
+    val = val.replace("_and_", " and ")
+
+    # Replace remaining underscores with " and "
+    val = val.replace("_", " and ")
+
+    return val
+    
 
 # --- 5. Chargement dans la base ---
 def load_data_to_db(data):
@@ -96,7 +109,7 @@ def load_data_to_db(data):
             r.get("objet"),
             r.get("reference"),
             r.get("criticite"),
-            r.get("destinataire"),
+            transform_destinataire(r.get("destinataire")),
             r.get("action"),
             r.get("date_transfert"),
             r.get("date_echeance"),
