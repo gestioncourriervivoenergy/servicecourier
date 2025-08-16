@@ -1,48 +1,65 @@
 import os
+import re
+import logging
 import requests
 import psycopg2
+import pandas as pd
 from psycopg2.extras import execute_batch
 from dotenv import load_dotenv
-import re
-import pandas as pd
 
-# Charger les variables d'environnement
+# ======================================================
+# 1. Configuration & Logging
+# ======================================================
 load_dotenv()
 
-# --- CONFIGURATION ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 API_TOKEN = os.getenv("API_TOKEN", "").strip()
 FORM_UID = os.getenv("FORM_UID", "").strip()
 BASE_URL = os.getenv("BASE_URL", "").strip()
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()  # Doit utiliser aws-0-eu-north-1.pooler.supabase.com
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 API_URL = os.getenv("API_URL", "").strip()
 
-if not API_TOKEN or not FORM_UID or not BASE_URL or not DATABASE_URL:
-    raise ValueError("Certaines variables d'environnement sont manquantes.")
+REQUIRED_ENV = [API_TOKEN, FORM_UID, BASE_URL, DATABASE_URL]
+if not all(REQUIRED_ENV):
+    raise ValueError("❌ Certaines variables d'environnement sont manquantes.")
 
-# --- 1. Extraction des données Kobo ---
-def get_kobo_data():
+
+# ======================================================
+# 2. Extraction - Kobo API
+# ======================================================
+def get_kobo_data() -> list[dict]:
+    """Récupère les données KoboToolbox via l’API."""
     url = f"{BASE_URL}/api/v2/assets/{FORM_UID}/data/?format=json"
     headers = {"Authorization": f"Token {API_TOKEN}"}
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=30)
     response.raise_for_status()
-    return response.json()["results"]
+    results = response.json().get("results", [])
+    logging.info(f"{len(results)} enregistrements récupérés depuis Kobo.")
+    return results
 
-# --- 2. Connexion base PostgreSQL ---
+
+# ======================================================
+# 3. Connexion PostgreSQL
+# ======================================================
 def get_connection():
-    """Connexion directe via DATABASE_URL"""
+    """Retourne une connexion PostgreSQL via DATABASE_URL."""
     return psycopg2.connect(DATABASE_URL)
 
-# --- 3. Nettoyage des emails ---
 
-
-
-def clean_email(email_str):
+# ======================================================
+# 4. Nettoyage - Emails
+# ======================================================
+def clean_email(email_str: str) -> str | None:
     if not email_str:
         return None
 
     email_str = str(email_str).strip().lower()
 
-    # Hardcoded JSON mapping
+    # Mapping Vivo Energy
     vivo_json = {
         "kader_maiga_vivoenergy_com": "Kader.Maiga@VivoEnergy.com",
         "jessica_brou_vivoenergy_com": "jessica.brou@vivoenergy.com",
@@ -63,29 +80,28 @@ def clean_email(email_str):
         "emmanuella_kouame_vivoenergy_com": "emmanuella.kouame@vivoenergy.com",
         "paule_irene_diallo_vivoenergy_com": "Paule-Irene.Diallo@vivoenergy.com",
         "eunice_achie_vivoenergy_com": "eunice.achie@vivoenergy.com",
-        "jean_paul_nobou@vivoenergy.com" : "Jean-Paul.Nobou@vivoenergy.com"
+        "jean_paul_nobou@vivoenergy.com": "Jean-Paul.Nobou@vivoenergy.com",
     }
 
-    # Hardcoded corrections
     corrections = {
         "_gmail_com": "@gmail.com",
         "_yahoo_com": "@yahoo.com",
         "_outlook_com": "@outlook.com",
     }
 
-    # Step 1: Check JSON
     if email_str in vivo_json:
         return vivo_json[email_str]
 
-    # Step 2: Check corrections
     for key, value in corrections.items():
         if key in email_str:
             return email_str.replace(key, value)
 
-    # Step 3: Return as is
-    return str(email_str)
+    return email_str
 
-# --- 4. Nettoyage delais_traitement ---
+
+# ======================================================
+# 5. Nettoyage - Délais de traitement
+# ======================================================
 def parse_delais_traitement(val):
     if val is None:
         return None
@@ -93,38 +109,36 @@ def parse_delais_traitement(val):
         return val
     if isinstance(val, str):
         match = re.match(r"(\d+)", val)
-        if match:
-            return int(match.group(1))
+        return int(match.group(1)) if match else None
     return None
 
-# --- 5. Transformation destinataire ---
-def transform_destinataire(val):
+
+# ======================================================
+# 6. Transformation - Destinataire
+# ======================================================
+def transform_destinataire(val: str | None) -> str | None:
     if not val or pd.isna(val):
         return None
     val = str(val).strip()
-    # Exception: keep `_and_` as " and "
-    val = val.replace("_and_", " and ")
-    # Replace remaining underscores with " and "
-    val = val.replace("_", " and ")
+    val = val.replace("_and_", " and ").replace("_", " and ")
     return val
 
-# --- 6. Récupérer les _id existants ---
-def get_existing_ids():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT _id FROM gestion_courier;")
-    existing = {row[0] for row in cur.fetchall()}
-    cur.close()
-    conn.close()
-    return existing
 
-# --- 7. Chargement dans la base ---
-def load_data_to_db(data):
-    conn = get_connection()
-    cur = conn.cursor()
+# ======================================================
+# 7. Lecture des IDs existants
+# ======================================================
+def get_existing_ids() -> set[int]:
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT _id FROM gestion_courier;")
+        return {row[0] for row in cur.fetchall()}
 
+
+# ======================================================
+# 8. Chargement - PostgreSQL
+# ======================================================
+def load_data_to_db(data: list[dict]) -> None:
     existing_ids = get_existing_ids()
-    print(f"{len(existing_ids)} _id déjà présents dans la base.")
+    logging.info(f"{len(existing_ids)} _id déjà présents dans la base.")
 
     insert_query = """
         INSERT INTO gestion_courier (
@@ -141,14 +155,11 @@ def load_data_to_db(data):
         ON CONFLICT (reference) DO UPDATE SET
             expediteur = EXCLUDED.expediteur,
             objet = EXCLUDED.objet,
-            statut = EXCLUDED.statut
+            statut = EXCLUDED.statut;
     """
 
-    rows_to_insert = []
-    for r in data:
-        if r.get("_id") in existing_ids:
-            continue  # Skip if _id already exists
-        rows_to_insert.append((
+    rows_to_insert = [
+        (
             r.get("_id"),
             r.get("formhub/uuid"),
             r.get("start"),
@@ -178,24 +189,33 @@ def load_data_to_db(data):
             r.get("_tags"),
             r.get("_notes"),
             r.get("_submitted_by"),
-            parse_delais_traitement(r.get("delais_traitement"))
-        ))
+            parse_delais_traitement(r.get("delais_traitement")),
+        )
+        for r in data if r.get("_id") not in existing_ids
+    ]
 
-    if rows_to_insert:
+    if not rows_to_insert:
+        logging.info("Aucune nouvelle ligne à insérer.")
+        return
+
+    with get_connection() as conn, conn.cursor() as cur:
         execute_batch(cur, insert_query, rows_to_insert)
         conn.commit()
-        print(f"{len(rows_to_insert)} nouvelles lignes insérées ou mises à jour.")
-    else:
-        print("Aucune nouvelle ligne à insérer.")
+        logging.info(f"{len(rows_to_insert)} nouvelles lignes insérées ou mises à jour.")
 
-    cur.close()
-    conn.close()
 
-# --- 8. Pipeline ETL ---
+# ======================================================
+# 9. Orchestration ETL
+# ======================================================
+def run_pipeline():
+    try:
+        logging.info("🚀 Démarrage du pipeline ETL...")
+        data = get_kobo_data()
+        load_data_to_db(data)
+        logging.info("✅ Pipeline terminé avec succès.")
+    except Exception as e:
+        logging.error(f"❌ Erreur lors de l'exécution du pipeline: {e}", exc_info=True)
+
+
 if __name__ == "__main__":
-    print("Extraction des données Kobo...")
-    data = get_kobo_data()
-    print(f"{len(data)} enregistrements récupérés.")
-
-    print("Chargement des données dans la base...")
-    load_data_to_db(data)
+    run_pipeline()
