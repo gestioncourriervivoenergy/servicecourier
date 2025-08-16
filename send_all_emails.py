@@ -4,19 +4,36 @@ from dotenv import load_dotenv
 from send_email import send_email
 import logging
 
-# --- Configuration ---
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+# --- Couleurs ANSI ---
+RESET = "\033[0m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
 
-# --- Logging ---
+# --- Configuration logging ---
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
+def log_info(msg):
+    logging.info(f"{GREEN}{msg}{RESET}")
+
+def log_warning(msg):
+    logging.warning(f"{YELLOW}{msg}{RESET}")
+
+def log_error(msg):
+    logging.error(f"{RED}{msg}{RESET}")
+
+# --- Connexion DB ---
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
+# --- Script principal ---
 def send_all_emails_en_cours():
     try:
         with get_connection() as conn:
@@ -26,23 +43,23 @@ def send_all_emails_en_cours():
                 )
                 rows = cur.fetchall()
     except Exception as e:
-        logging.error(f"Erreur connexion base: {e}")
+        log_error(f"Erreur connexion base: {e}")
         return
 
     if not rows:
-        logging.info("Aucune donnée trouvée, arrêt du script.")
+        log_info("Aucune donnée trouvée, arrêt du script.")
         return
 
-    logging.info(f"{len(rows)} références à traiter")
+    log_info(f"{len(rows)} références à traiter")
 
     for ref, delai_traitement in rows:
         count = 2 if delai_traitement == 24 else 1
         for i in range(count):
             try:
                 send_email(ref)
-                logging.info(f"Email envoyé pour référence: {ref} (envoi {i+1}/{count})")
+                log_info(f"Email envoyé pour référence: {ref} (envoi {i+1}/{count})")
             except Exception as e:
-                logging.error(f"Erreur envoi email pour {ref}: {e}")
+                log_error(f"Erreur envoi email pour {ref}: {e}")
 
 if __name__ == "__main__":
     send_all_emails_en_cours()
