@@ -36,76 +36,53 @@ def get_connection():
 
 
 
-# JSON complet de correspondance VivoEnergy
-vivo_json = {
-  "Kader.Maiga@VivoEnergy.com": "kader_maiga_vivoenergy_com",
-  "jessica.brou@vivoenergy.com": "jessica_brou_vivoenergy_com",
-  "Regine.Nogbou@vivoenergy.com": "regine_nogbou_vivoenergy_com",
-  "Konan.Ngoran@vivoenergy.com": "konan_ngoran_vivoenergy_com",
-  "Armand.Seri@vivoenergy.com": "armand_seri_vivoenergy_com",
-  "Jean.Bohoussou@vivoenergy.com": "jean_bohoussou_vivoenergy_com",
-  "Juvenal.Guei@vivoenergy.com": "juvenal_guei_vivoenergy_com",
-  "Jean-Paul.Nobou@vivoenergy.com": "jean_paul_nobou_vivoenergy_com",
-  "Sidonie.Gnammon@vivoenergy.com": "sidonie_gnammon_vivoenergy_com",
-  "bernadin.kouassi@vivoenergy.com": "bernadin_kouassi_vivoenergy_com",
-  "Solange.Gbeuly@vivoenergy.com": "solange_gbeuly_vivoenergy_com",
-  "Emma.Yapi@vivoenergy.com": "emma_yapi_vivoenergy_com",
-  "Charles.Tape@vivoenergy.com": "charles_tape_vivoenergy_com",
-  "Christophe.Dia@vivoenergy.com": "christophe_dia_vivoenergy_com",
-  "Brehima.Kone@vivoenergy.com": "brehima_kone_vivoenergy_com",
-  "Frederic.Kouadio@vivoenergy.com": "frederic_kouadio_vivoenergy_com",
-  "emmanuella.kouame@vivoenergy.com": "emmanuella_kouame_vivoenergy_com",
-  "Paule-Irene.Diallo@vivoenergy.com": "paule_irene_diallo_vivoenergy_com",
-  "eunice.achie@vivoenergy.com": "eunice_achie_vivoenergy_com"
-}
-import pandas as pd
-
 def clean_email(email_str):
-    if not email_str or pd.isna(email_str):
+    if not email_str:
         return None
 
     email_str = str(email_str).strip().lower()
 
-    # Mapping JSON of known domains
+    # Hardcoded JSON mapping
+    vivo_json = {
+        "kader_maiga_vivoenergy_com": "Kader.Maiga@VivoEnergy.com",
+        "jessica_brou_vivoenergy_com": "jessica.brou@vivoenergy.com",
+        "regine_nogbou_vivoenergy_com": "Regine.Nogbou@vivoenergy.com",
+        "konan_ngoran_vivoenergy_com": "Konan.Ngoran@vivoenergy.com",
+        "armand_seri_vivoenergy_com": "Armand.Seri@vivoenergy.com",
+        "jean_bohoussou_vivoenergy_com": "Jean.Bohoussou@vivoenergy.com",
+        "juvenal_guei_vivoenergy_com": "Juvenal.Guei@vivoenergy.com",
+        "jean_paul_nobou_vivoenergy_com": "Jean-Paul.Nobou@vivoenergy.com",
+        "sidonie_gnammon_vivoenergy_com": "Sidonie.Gnammon@vivoenergy.com",
+        "bernadin_kouassi_vivoenergy_com": "bernadin.kouassi@vivoenergy.com",
+        "solange_gbeuly_vivoenergy_com": "Solange.Gbeuly@vivoenergy.com",
+        "emma_yapi_vivoenergy_com": "Emma.Yapi@vivoenergy.com",
+        "charles_tape_vivoenergy_com": "Charles.Tape@vivoenergy.com",
+        "christophe_dia_vivoenergy_com": "Christophe.Dia@vivoenergy.com",
+        "brehima_kone_vivoenergy_com": "Brehima.Kone@vivoenergy.com",
+        "frederic_kouadio_vivoenergy_com": "Frederic.Kouadio@vivoenergy.com",
+        "emmanuella_kouame_vivoenergy_com": "emmanuella.kouame@vivoenergy.com",
+        "paule_irene_diallo_vivoenergy_com": "Paule-Irene.Diallo@vivoenergy.com",
+        "eunice_achie_vivoenergy_com": "eunice.achie@vivoenergy.com"
+    }
+
+    # Hardcoded corrections
     corrections = {
         "_gmail_com": "@gmail.com",
         "_yahoo_com": "@yahoo.com",
         "_outlook_com": "@outlook.com",
-        "_vivoenergy_com": "@vivoenergy.com"
     }
 
-    # Check if email ends with a known wrong domain
-    domain = None
-    for wrong, right in corrections.items():
-        if email_str.endswith(wrong):
-            domain = right
-            email_str = email_str[: -len(wrong)]
-            break
+    # Step 1: Check JSON
+    if email_str in vivo_json:
+        return vivo_json[email_str]
 
-    # If domain not in JSON, guess it from last part
-    if domain is None:
-        parts_split = email_str.split("_")
-        if len(parts_split) > 1:
-            domain = "@" + parts_split[-1] + ".com"
-            email_str = "_".join(parts_split[:-1])
-        else:
-            domain = ""  # fallback if only one part
+    # Step 2: Check corrections
+    for key, value in corrections.items():
+        if key in email_str:
+            return email_str.replace(key, value)
 
-    # Split name parts on _
-    parts = email_str.split("_")
-
-    if len(parts) == 2:
-        # First + Last name
-        prenom, nom = parts
-        return f"{prenom}.{nom}{domain}"
-
-    if len(parts) == 3:
-        # Two-part first name + last name
-        prenom1, prenom2, nom = parts
-        return f"{prenom1}-{prenom2}.{nom}{domain}"
-
-    # Default: return email with domain
-    return email_str + domain
+    # Step 3: Return as is
+    return str(email_str)
 
 # --- 4. Nettoyage delais_traitement ---
 def parse_delais_traitement(val):
