@@ -62,7 +62,8 @@ def clean_email(email_str):
         "frederic_kouadio_vivoenergy_com": "Frederic.Kouadio@vivoenergy.com",
         "emmanuella_kouame_vivoenergy_com": "emmanuella.kouame@vivoenergy.com",
         "paule_irene_diallo_vivoenergy_com": "Paule-Irene.Diallo@vivoenergy.com",
-        "eunice_achie_vivoenergy_com": "eunice.achie@vivoenergy.com"
+        "eunice_achie_vivoenergy_com": "eunice.achie@vivoenergy.com",
+        "jean_paul_nobou@vivoenergy.com" : "Jean-Paul.Nobou@vivoenergy.com"
     }
 
     # Hardcoded corrections
