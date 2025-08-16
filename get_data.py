@@ -34,13 +34,39 @@ def get_connection():
 
 # --- 3. Nettoyage des emails ---
 
+
+
+# JSON complet de correspondance VivoEnergy
+vivo_json = {
+  "Kader.Maiga@VivoEnergy.com": "kader_maiga_vivoenergy_com",
+  "jessica.brou@vivoenergy.com": "jessica_brou_vivoenergy_com",
+  "Regine.Nogbou@vivoenergy.com": "regine_nogbou_vivoenergy_com",
+  "Konan.Ngoran@vivoenergy.com": "konan_ngoran_vivoenergy_com",
+  "Armand.Seri@vivoenergy.com": "armand_seri_vivoenergy_com",
+  "Jean.Bohoussou@vivoenergy.com": "jean_bohoussou_vivoenergy_com",
+  "Juvenal.Guei@vivoenergy.com": "juvenal_guei_vivoenergy_com",
+  "Jean-Paul.Nobou@vivoenergy.com": "jean_paul_nobou_vivoenergy_com",
+  "Sidonie.Gnammon@vivoenergy.com": "sidonie_gnammon_vivoenergy_com",
+  "bernadin.kouassi@vivoenergy.com": "bernadin_kouassi_vivoenergy_com",
+  "Solange.Gbeuly@vivoenergy.com": "solange_gbeuly_vivoenergy_com",
+  "Emma.Yapi@vivoenergy.com": "emma_yapi_vivoenergy_com",
+  "Charles.Tape@vivoenergy.com": "charles_tape_vivoenergy_com",
+  "Christophe.Dia@vivoenergy.com": "christophe_dia_vivoenergy_com",
+  "Brehima.Kone@vivoenergy.com": "brehima_kone_vivoenergy_com",
+  "Frederic.Kouadio@vivoenergy.com": "frederic_kouadio_vivoenergy_com",
+  "emmanuella.kouame@vivoenergy.com": "emmanuella_kouame_vivoenergy_com",
+  "Paule-Irene.Diallo@vivoenergy.com": "paule_irene_diallo_vivoenergy_com",
+  "eunice.achie@vivoenergy.com": "eunice_achie_vivoenergy_com"
+}
+import pandas as pd
+
 def clean_email(email_str):
-    if email_str is None or pd.isna(email_str) or str(email_str).strip() == "":
+    if not email_str or pd.isna(email_str):
         return None
 
-    email_str = str(email_str).strip().lower().replace(" ", "")
+    email_str = str(email_str).strip().lower()
 
-    # dictionnaire de corrections pour les domaines
+    # Mapping JSON of known domains
     corrections = {
         "_gmail_com": "@gmail.com",
         "_yahoo_com": "@yahoo.com",
@@ -48,44 +74,38 @@ def clean_email(email_str):
         "_vivoenergy_com": "@vivoenergy.com"
     }
 
+    # Check if email ends with a known wrong domain
+    domain = None
+    for wrong, right in corrections.items():
+        if email_str.endswith(wrong):
+            domain = right
+            email_str = email_str[: -len(wrong)]
+            break
+
+    # If domain not in JSON, guess it from last part
+    if domain is None:
+        parts_split = email_str.split("_")
+        if len(parts_split) > 1:
+            domain = "@" + parts_split[-1] + ".com"
+            email_str = "_".join(parts_split[:-1])
+        else:
+            domain = ""  # fallback if only one part
+
+    # Split name parts on _
     parts = email_str.split("_")
 
-    # === Cas prénom composé + nom (4 parties) ===
-    if len(parts) == 4:
-        prenom1, prenom2, nom, domaine = parts
-        if "_" + domaine + "_com" in corrections:
-            domain = corrections["_" + domaine + "_com"]
-        else:
-            domain = "@" + domaine + ".com"
-
-        # Capitalisation uniquement si domaine VivoEnergy
-        if domain == "@vivoenergy.com":
-            prenom1 = prenom1.capitalize()
-            prenom2 = prenom2.capitalize()
-            nom = nom.capitalize()
-        return f"{prenom1}-{prenom2}.{nom}{domain}"
-
-    # === Cas prénom + nom (3 parties) ===
-    if len(parts) == 3:
-        prenom, nom, domaine = parts
-        if "_" + domaine + "_com" in corrections:
-            domain = corrections["_" + domaine + "_com"]
-        else:
-            domain = "@" + domaine + ".com"
-
-        # Capitalisation uniquement si domaine VivoEnergy
-        if domain == "@vivoenergy.com":
-            prenom = prenom.capitalize()
-            nom = nom.capitalize()
+    if len(parts) == 2:
+        # First + Last name
+        prenom, nom = parts
         return f"{prenom}.{nom}{domain}"
 
-    # === Cas simple type Gmail, Yahoo, Outlook (2 parties) ===
-    for wrong, right in corrections.items():
-        if wrong in email_str:
-            email_str = email_str.replace(wrong, right)
+    if len(parts) == 3:
+        # Two-part first name + last name
+        prenom1, prenom2, nom = parts
+        return f"{prenom1}-{prenom2}.{nom}{domain}"
 
-    return email_str
-
+    # Default: return email with domain
+    return email_str + domain
 
 # --- 4. Nettoyage delais_traitement ---
 def parse_delais_traitement(val):
