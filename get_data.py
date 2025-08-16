@@ -54,49 +54,54 @@ def get_connection():
 # 4. Nettoyage - Emails
 # ======================================================
 def clean_email(email_str: str) -> str | None:
+    """Nettoie et normalise les emails (Vivo + domaines publics)."""
     if not email_str:
         return None
 
-    email_str = str(email_str).strip().lower()
+    raw = str(email_str).strip().lower()
 
-    # Mapping Vivo Energy
+    # Mapping Vivo Energy (clé simplifiée sans @ ni .)
     vivo_json = {
-        "kader_maiga_vivoenergy_com": "Kader.Maiga@VivoEnergy.com",
-        "jessica_brou_vivoenergy_com": "jessica.brou@vivoenergy.com",
-        "regine_nogbou_vivoenergy_com": "Regine.Nogbou@vivoenergy.com",
-        "konan_ngoran_vivoenergy_com": "Konan.Ngoran@vivoenergy.com",
-        "armand_seri_vivoenergy_com": "Armand.Seri@vivoenergy.com",
-        "jean_bohoussou_vivoenergy_com": "Jean.Bohoussou@vivoenergy.com",
-        "juvenal_guei_vivoenergy_com": "Juvenal.Guei@vivoenergy.com",
-        "jean_paul_nobou_vivoenergy_com": "Jean-Paul.Nobou@vivoenergy.com",
-        "sidonie_gnammon_vivoenergy_com": "Sidonie.Gnammon@vivoenergy.com",
-        "bernadin_kouassi_vivoenergy_com": "bernadin.kouassi@vivoenergy.com",
-        "solange_gbeuly_vivoenergy_com": "Solange.Gbeuly@vivoenergy.com",
-        "emma_yapi_vivoenergy_com": "Emma.Yapi@vivoenergy.com",
-        "charles_tape_vivoenergy_com": "Charles.Tape@vivoenergy.com",
-        "christophe_dia_vivoenergy_com": "Christophe.Dia@vivoenergy.com",
-        "brehima_kone_vivoenergy_com": "Brehima.Kone@vivoenergy.com",
-        "frederic_kouadio_vivoenergy_com": "Frederic.Kouadio@vivoenergy.com",
-        "emmanuella_kouame_vivoenergy_com": "emmanuella.kouame@vivoenergy.com",
-        "paule_irene_diallo_vivoenergy_com": "Paule-Irene.Diallo@vivoenergy.com",
-        "eunice_achie_vivoenergy_com": "eunice.achie@vivoenergy.com",
-        "jean_paul_nobou@vivoenergy.com": "Jean-Paul.Nobou@vivoenergy.com",
+        "kader_maiga": "Kader.Maiga@VivoEnergy.com",
+        "jessica_brou": "jessica.brou@vivoenergy.com",
+        "regine_nogbou": "Regine.Nogbou@vivoenergy.com",
+        "konan_ngoran": "Konan.Ngoran@vivoenergy.com",
+        "armand_seri": "Armand.Seri@vivoenergy.com",
+        "jean_bohoussou": "Jean.Bohoussou@vivoenergy.com",
+        "juvenal_guei": "Juvenal.Guei@vivoenergy.com",
+        "jean_paul_nobou": "Jean-Paul.Nobou@vivoenergy.com",
+        "sidonie_gnammon": "Sidonie.Gnammon@vivoenergy.com",
+        "bernadin_kouassi": "bernadin.kouassi@vivoenergy.com",
+        "solange_gbeuly": "Solange.Gbeuly@vivoenergy.com",
+        "emma_yapi": "Emma.Yapi@vivoenergy.com",
+        "charles_tape": "Charles.Tape@vivoenergy.com",
+        "christophe_dia": "Christophe.Dia@vivoenergy.com",
+        "brehima_kone": "Brehima.Kone@vivoenergy.com",
+        "frederic_kouadio": "Frederic.Kouadio@vivoenergy.com",
+        "emmanuella_kouame": "emmanuella.kouame@vivoenergy.com",
+        "paule_irene_diallo": "Paule-Irene.Diallo@vivoenergy.com",
+        "eunice_achie": "eunice.achie@vivoenergy.com",
     }
 
+    # Domains corrections
     corrections = {
         "_gmail_com": "@gmail.com",
         "_yahoo_com": "@yahoo.com",
         "_outlook_com": "@outlook.com",
     }
 
-    if email_str in vivo_json:
-        return vivo_json[email_str]
-
+    # Étape 1 : corriger les suffixes
     for key, value in corrections.items():
-        if key in email_str:
-            return email_str.replace(key, value)
+        if key in raw:
+            raw = raw.replace(key, value)
 
-    return email_str
+    # Étape 2 : extraire le préfixe (avant le @ ou _vivoenergy)
+    prefix = re.split(r"[@_]", raw)[0]
+
+    if prefix in vivo_json:
+        return vivo_json[prefix]
+
+    return raw
 
 
 # ======================================================
