@@ -33,21 +33,59 @@ def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
 # --- 3. Nettoyage des emails ---
+
 def clean_email(email_str):
     if email_str is None or pd.isna(email_str) or str(email_str).strip() == "":
         return None
 
     email_str = str(email_str).strip().lower().replace(" ", "")
+
+    # dictionnaire de corrections pour les domaines
     corrections = {
         "_gmail_com": "@gmail.com",
         "_yahoo_com": "@yahoo.com",
-        "_outlook_com": "@outlook.com"
+        "_outlook_com": "@outlook.com",
+        "_vivoenergy_com": "@vivoenergy.com"
     }
+
+    parts = email_str.split("_")
+
+    # === Cas prénom composé + nom (4 parties) ===
+    if len(parts) == 4:
+        prenom1, prenom2, nom, domaine = parts
+        if "_" + domaine + "_com" in corrections:
+            domain = corrections["_" + domaine + "_com"]
+        else:
+            domain = "@" + domaine + ".com"
+
+        # Capitalisation uniquement si domaine VivoEnergy
+        if domain == "@vivoenergy.com":
+            prenom1 = prenom1.capitalize()
+            prenom2 = prenom2.capitalize()
+            nom = nom.capitalize()
+        return f"{prenom1}-{prenom2}.{nom}{domain}"
+
+    # === Cas prénom + nom (3 parties) ===
+    if len(parts) == 3:
+        prenom, nom, domaine = parts
+        if "_" + domaine + "_com" in corrections:
+            domain = corrections["_" + domaine + "_com"]
+        else:
+            domain = "@" + domaine + ".com"
+
+        # Capitalisation uniquement si domaine VivoEnergy
+        if domain == "@vivoenergy.com":
+            prenom = prenom.capitalize()
+            nom = nom.capitalize()
+        return f"{prenom}.{nom}{domain}"
+
+    # === Cas simple type Gmail, Yahoo, Outlook (2 parties) ===
     for wrong, right in corrections.items():
         if wrong in email_str:
             email_str = email_str.replace(wrong, right)
 
-    return email_str if "@" in email_str else None
+    return email_str
+
 
 # --- 4. Nettoyage delais_traitement ---
 def parse_delais_traitement(val):
