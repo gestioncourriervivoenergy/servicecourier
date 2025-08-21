@@ -1,18 +1,16 @@
 import os
-import psycopg2
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+import psycopg2
 
 load_dotenv()
 
-# --- Outlook Config ---
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT =os.getenv("EMAIL_PORT")
-EMAIL_USER = os.getenv("OUTLOOK_EMAIL")
-EMAIL_PASS = os.getenv("OUTLOOK_PASS")
-EMAIL_FROM = EMAIL_USER  # always send from the Outlook account
+EMAIL_HOST = os.getenv("EMAIL_HOST").strip()
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_USER = os.getenv("OUTLOOK_EMAIL").strip()
+EMAIL_PASS = os.getenv("OUTLOOK_PASS").strip()
+EMAIL_FROM = EMAIL_USER
 
 API_URL = os.getenv("API_URL").strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -20,33 +18,30 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
-def send_email(ref):
+def send_email(ref, server=None):
+    """Envoie un email pour la référence donnée, utilise server SMTP si fourni."""
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute(
-        """
+    cur.execute("""
         SELECT destinataire, email_destinataire, email_assistante, objet, statut, expediteur, date_recept, criticite, date_echeance
         FROM gestion_courier
         WHERE reference = %s
-          AND DATE(date_echeance) >= DATE(NOW())
-        """,
-        (ref,)
-    )
+          AND DATE(date_echeance) >= CURRENT_DATE
+    """, (ref,))
     row = cur.fetchone()
     cur.close()
     conn.close()
 
     if not row:
-        print(f"Référence {ref} non trouvée en base.")
+        print(f"[INFO] Référence {ref} non trouvée.")
         return
 
     destinataire, email_dest, email_cc, objet, statut, expediteur, date_recept, criticite, date_echeance = row
     if statut != "en_cours":
-        print(f"Le courrier {ref} n'est pas en 'en_cours' (statut actuel: {statut}), email non envoyé.")
+        print(f"[INFO] Courrier {ref} n'est pas en 'en_cours' (statut: {statut})")
         return
-
     if not email_dest:
-        print(f"Pas d'email pour {destinataire} ({ref})")
+        print(f"[INFO] Pas d'email pour {destinataire} ({ref})")
         return
 
     link = f"{API_URL}/api/traiter?ref={ref}"
@@ -82,16 +77,19 @@ Merci !
         recipients.append(email_cc)
     recipients.append(EMAIL_FROM)
 
-    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+    close_server = False
+    if server is None:
+        import smtplib
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
+        close_server = True
+
+    try:
         server.sendmail(EMAIL_FROM, recipients, msg.as_string())
+        print(f"[SUCCESS] Email envoyé à {email_dest} pour la référence {ref}")
+    except Exception as e:
+        print(f"[ERROR] Erreur envoi email pour {ref}: {e}")
 
-    print(f"Email envoyé à {email_dest} pour la référence {ref}")
-
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 2:
-        print("Usage: python send_email.py <reference>")
-    else:
-        send_email(sys.argv[1])
+    if close_server:
+        server.quit()
