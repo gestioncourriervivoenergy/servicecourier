@@ -1,8 +1,9 @@
-name: Get Data & Send Emails (Every 2 Min)
+name: Get Data & Send Emails (Mon-Fri, Every 2 Min)
 
 on:
   schedule:
-    - cron: "*/2 * * * *"  # toutes les 2 minutes
+    # Run every 2 minutes, Monday–Friday
+    - cron: "*/2 * * * 1-5"
   workflow_dispatch:
 
 jobs:
@@ -25,16 +26,16 @@ jobs:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           FORM_UID: ${{ secrets.FORM_UID }}
           BASE_URL: ${{ secrets.BASE_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}   # ⬅ On passe juste DATABASE_URL
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_URL: ${{ secrets.API_URL }}
 
       - name: Run send_all_emails.py
         run: python send_all_emails.py
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}   # ⬅ Même chose ici
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
           EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          OUTLOOK_EMAIL: ${{ secrets.OUTLOOK_EMAIL }}  # ✅ Match your Python code
+          OUTLOOK_PASS: ${{ secrets.OUTLOOK_PASS }}    # ✅ Match your Python code
+          EMAIL_FROM: ${{ secrets.OUTLOOK_EMAIL }}     # ✅ Always send from Outlook
           API_URL: ${{ secrets.API_URL }}

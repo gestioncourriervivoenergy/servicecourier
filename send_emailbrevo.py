@@ -4,34 +4,37 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 
-# --- Outlook Config ---
-EMAIL_HOST = os.getenv("EMAIL_HOST").strip()
-EMAIL_PORT =os.getenv("EMAIL_PORT")
-EMAIL_USER = os.getenv("OUTLOOK_EMAIL").strip()
-EMAIL_PASS = os.getenv("OUTLOOK_PASS").strip()
-EMAIL_FROM = EMAIL_USER  # always send from the Outlook account
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com").strip()
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_USER = os.getenv("EMAIL_USER").strip()
+EMAIL_PASS = os.getenv("EMAIL_PASS").strip()
+EMAIL_FROM = os.getenv("EMAIL_FROM", "gestioncourriervivoenergy@gmail.com").strip()
 
 API_URL = os.getenv("API_URL").strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_connection():
+    # Connexion directe avec DATABASE_URL
     return psycopg2.connect(DATABASE_URL)
 
 def send_email(ref):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        """
-        SELECT destinataire, email_destinataire, email_assistante, objet, statut, expediteur, date_recept, criticite, date_echeance
-        FROM gestion_courier
-        WHERE reference = %s
-          AND DATE(date_echeance) >= DATE(NOW())
-        """,
-        (ref,)
-    )
+    """
+    SELECT destinataire, email_destinataire, email_assistante, objet, statut, expediteur, date_recept, criticite, date_echeance
+    FROM gestion_courier
+    WHERE reference = %s
+      AND DATE(date_echeance) >= DATE(NOW())
+    """,
+    (ref,)
+)
+
+
     row = cur.fetchone()
     cur.close()
     conn.close()

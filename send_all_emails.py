@@ -1,8 +1,9 @@
 import os
 import psycopg2
 from dotenv import load_dotenv
-from send_email import send_email
+from send_emailbrevo import send_email
 import logging
+from datetime import datetime
 
 # --- Couleurs ANSI ---
 RESET = "\033[0m"
@@ -39,7 +40,16 @@ def send_all_emails_en_cours():
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT reference, delais_traitement FROM gestion_courier WHERE statut = 'en_cours'"
+                    """
+                    SELECT reference, delais_traitement, date_echeance 
+                    FROM gestion_courier 
+                    WHERE statut = 'en_cours'
+                    AND DATE(date_echeance) >= DATE(NOW())
+                    AND (
+                        last_email_sent_at IS NULL 
+                        OR DATE(last_email_sent_at) < CURRENT_DATE
+                    )
+                    """
                 )
                 rows = cur.fetchall()
     except Exception as e:
@@ -52,14 +62,34 @@ def send_all_emails_en_cours():
 
     log_info(f"{len(rows)} références à traiter")
 
-    for ref, delai_traitement in rows:
-        count = 2 if delai_traitement == 24 else 1
-        for i in range(count):
-            try:
-                send_email(ref)
-                log_info(f"Email envoyé pour référence: {ref} (envoi {i+1}/{count})")
-            except Exception as e:
-                log_error(f"Erreur envoi email pour {ref}: {e}")
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                for ref, delai_traitement, date_echeance in rows:
+                    count = 2 if delai_traitement == 24 else 1
+                    for i in range(count):
+                        try:
+                            send_email(ref)
+                            log_info(
+                                f"Email envoyé pour référence: {ref}, échéance: {date_echeance} (envoi {i+1}/{count})"
+                            )
+                            # mise à jour last_email_sent_at
+                            cur.execute(
+                                """
+                                UPDATE gestion_courier
+                                SET last_email_sent_at = NOW()
+                                WHERE reference = %s
+                                """,
+                                (ref,)
+                            )
+                            conn.commit()
+                        except Exception as e:
+                            log_error(
+                                f"Erreur envoi email pour référence: {ref}, échéance: {date_echeance} -> {e}"
+                            )
+    except Exception as e:
+        log_error(f"Erreur mise à jour last_email_sent_at: {e}")
+
 
 if __name__ == "__main__":
     send_all_emails_en_cours()
