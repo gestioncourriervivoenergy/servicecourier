@@ -10,7 +10,7 @@ load_dotenv()
 # --- Outlook Config ---
 EMAIL_HOST = os.getenv("EMAIL_HOST").strip()
 EMAIL_PORT =os.getenv("EMAIL_PORT")
-EMAIL_USER = os.getenv("OUTLOOK_EMAIL").strip()
+EMAIL_USER = os.getenv("OUTLOOK_EMAIL")
 EMAIL_PASS = os.getenv("OUTLOOK_PASS").strip()
 EMAIL_FROM = EMAIL_USER  # always send from the Outlook account
 
