@@ -1,9 +1,9 @@
-name: Get Data & Send Emails (Mon-Fri, Every 2 Min)
+name: Get Data & Send Emails (Mon-Fri, Every 1 Min)
 
 on:
   schedule:
-    # Run every 2 minutes, Monday–Friday
-    - cron: "*/2 * * * 1-5"
+    # Run every 1 minutes, Monday–Friday
+    - cron: "*/1 * * * 1-5"
   workflow_dispatch:
 
 jobs:
