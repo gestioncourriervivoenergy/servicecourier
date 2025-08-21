@@ -59,7 +59,7 @@ def send_all_emails_en_cours():
         return
 
     if not rows:
-        log_info("Aucune donnée trouvée, arrêt du script.")
+        log_info("Aucune nouvelle  donnée trouvée, arrêt du script.")
         return
 
     log_info(f"{len(rows)} références à traiter")
