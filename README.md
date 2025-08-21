@@ -19,12 +19,12 @@ Ce projet automatise la **gestion des courriers entrants** via un flux complet a
 ## 📊 Schéma d’architecture
 ```mermaid
 flowchart LR
-    A[KoboToolbox Formulaire] -->|Réponses| B[Script get_data.py]
-    B -->|Insertion / Mise à jour| C[(Supabase - PostgreSQL)]
-    C -->|Sélection courriers en retard| D[Script send_all_emails.py]
-    D -->|SMTP Outlook [mot de passe app]| E[Destinataires]
+    A[KoboToolbox Formulaire] -->|Reponses| B[Script get_data.py]
+    B -->|Insertion et mise a jour| C[(Supabase - PostgreSQL)]
+    C -->|Selection courriers en retard| D[Script send_all_emails.py]
+    D -->|SMTP Outlook| E[Destinataires]
     E -->|Clique sur lien dans email| F[API Next.js - Vercel]
-    F -->|Mise à jour du statut| C
+    F -->|Mise a jour du statut| C
 ```
 
 ## ⚙️ Fonctionnement
