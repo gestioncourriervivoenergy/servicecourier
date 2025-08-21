@@ -54,40 +54,45 @@ Le flux est automatisé via **GitHub Actions** :
 ### Exemple de workflow `.github/workflows/automation.yml`
 
 ```yaml
-name: Gestion Courriers
+name: Get Data & Send Emails (Mon-Fri, Every 2 Min)
 
 on:
   schedule:
-    - cron: "0 8 * * *"  # Tous les jours à 08h UTC
+    # Run every 2 minutes, Monday–Friday
+    - cron: "*/2 * * * 1-5"
   workflow_dispatch:
 
 jobs:
-  run-scripts:
+  get_and_send:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Configurer Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-
-      - name: Installer les dépendances
-        run: |
-          pip install -r requirements.txt
-
-      - name: Lancer récupération Kobo
-        run: python backend/get_data.py
-
-      - name: Lancer envoi des emails
-        run: python backend/send_all_emails.py
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Run get_data.py
+        run: python get_data.py
         env:
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          FORM_UID: ${{ secrets.FORM_UID }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_URL: ${{ secrets.API_URL }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: Run send_all_emails.py
+        run: python send_all_emails.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          OUTLOOK_EMAIL: ${{ secrets.OUTLOOK_EMAIL }}  # ✅ Match your Python code
+          OUTLOOK_PASS: ${{ secrets.OUTLOOK_PASS }}    # ✅ Match your Python code
+          EMAIL_FROM: ${{ secrets.OUTLOOK_EMAIL }}     # ✅ Always send from Outlook
+          API_URL: ${{ secrets.API_URL }}
 
