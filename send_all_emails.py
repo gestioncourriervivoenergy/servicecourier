@@ -1,7 +1,7 @@
 import os
 import psycopg2
 from dotenv import load_dotenv
-from send_emailbrevo import send_email
+from send_email import send_email
 import logging
 from datetime import datetime
 
