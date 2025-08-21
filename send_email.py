@@ -23,7 +23,7 @@ def send_email(ref, server=None):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT destinataire, email_destinataire, email_assistante, objet, statut, expediteur, date_recept, criticite, date_echeance
+        SELECT destinataire, email_destinataire, email_assistante, objet, statut, expediteur, date_recept, criticite, date_echeance,delais_traitement
         FROM gestion_courier
         WHERE reference = %s
           AND DATE(date_echeance) >= CURRENT_DATE
@@ -36,7 +36,7 @@ def send_email(ref, server=None):
         print(f"[INFO] Référence {ref} non trouvée.")
         return
 
-    destinataire, email_dest, email_cc, objet, statut, expediteur, date_recept, criticite, date_echeance = row
+    destinataire, email_dest, email_cc, objet, statut, expediteur, date_recept, criticite, date_echeance,delais_traitement = row
     if statut != "en_cours":
         print(f"[INFO] Courrier {ref} n'est pas en 'en_cours' (statut: {statut})")
         return
@@ -51,20 +51,20 @@ def send_email(ref, server=None):
     msg["To"] = email_dest
     if email_cc:
         msg["Cc"] = email_cc
-    msg["Subject"] = f"[Rappel] Courrier en retard : {objet}"
+    msg["Subject"] = f"Alerte Courrier à traiter : {objet}"
 
     body = f"""
 Bonjour {destinataire},
 
-Le courrier suivant n’a pas été traité dans les délais impartis :
+Nous vous informons de la réception d’un courrier dont les critères sont :
 
 Objet : {objet}
 Référence : {ref}
 Expéditeur : {expediteur}
 Date de réception : {date_recept}
 Criticité : {criticite}
+Délai de traitement   : {delais_traitement}
 Date limite de réponse : {date_echeance}
-
 Cliquez sur ce lien pour le marquer comme TRAITÉ :
 {link}
 
