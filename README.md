@@ -19,7 +19,7 @@ Ce projet automatise la **gestion des courriers entrants** via un flux complet a
 ## 📊 Schéma d’architecture
 ```mermaid
 flowchart LR
-    A[KoboToolbox Formulaire] -->|Reponses| B[Script get_data.py]
+    A[KoboToolbox Formulaire] -->|Reponses| B[ETL Script get_data.py]
     B -->|Insertion et mise a jour| C[(Supabase - PostgreSQL)]
     C -->|Selection courriers en retard| D[Script send_all_emails.py]
     D -->|SMTP Gmail| E[Destinataires]
