@@ -25,7 +25,6 @@ flowchart LR
     D -->|SMTP Outlook [mot de passe app]| E[Destinataires]
     E -->|Clique sur lien dans email| F[API Next.js - Vercel]
     F -->|Mise à jour du statut| C
-
 ```
 
 ## ⚙️ Fonctionnement
