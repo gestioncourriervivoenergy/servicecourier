@@ -8,11 +8,11 @@ from urllib.parse import urlparse
 
 load_dotenv()
 
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com").strip()
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USER = os.getenv("EMAIL_USER").strip()
-EMAIL_PASS = os.getenv("EMAIL_PASS").strip()
-EMAIL_FROM = os.getenv("EMAIL_FROM", "gestioncourriervivoenergy@gmail.com").strip()
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "gestioncourriervivoenergy@gmail.com")
 
 API_URL = os.getenv("API_URL").strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
