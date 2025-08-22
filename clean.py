@@ -25,7 +25,8 @@ def clean_email(email_str: str) -> str | None:
         "paule_irene_diallo": "Paule-Irene.Diallo@vivoenergy.com",
         "eunice_achie": "eunice.achie@vivoenergy.com",
         "eunice_achie_vivoenergy_com": "eunice.achie@vivoenergy.com",
-        "emma_yapi_vivoenergy_com":"Emma.Yapi@vivoenergy.com"
+        "emma_yapi_vivoenergy_com":"Emma.Yapi@vivoenergy.com",
+        "bernadin_kouassi_vivoenergy_com": "bernadin.kouassi@vivoenergy.com"
 
         
     }
